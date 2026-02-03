@@ -2,6 +2,7 @@ const socketIO = require('socket.io');
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 const connectionHandler = require('../socket/handlers/connectionHandler');
+const { config } = require('dotenv');
 
 let io;
 
@@ -22,7 +23,7 @@ const initializeSocket = (server) => {
         return next(new Error('Authentication error: No token provided'));
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, config.jwtSecret);
       socket.userId = decoded.id;
       socket.username = decoded.username;
       
