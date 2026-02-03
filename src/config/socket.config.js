@@ -15,24 +15,26 @@ const initializeSocket = (server) => {
     transports: ['websocket', 'polling']
   });
 
-  io.use((socket, next) => {
-    try {
-      const token = socket.handshake.auth.token;
-      
-      if (!token) {
-        return next(new Error('Authentication error: No token provided'));
-      }
-
-      const decoded = jwt.verify(token, config.jwtSecret);
-      socket.userId = decoded.id;
-      socket.username = decoded.username;
-      
-      next();
-    } catch (err) {
-      logger.error(`Socket auth error: ${err.message}`);
-      next(new Error('Authentication error: Invalid token'));
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    
+    if (!token) {
+      logger.warn(`Socket ${socket.id}: No token provided`);
+      return next(new Error('Authentication error: No token provided'));
     }
-  });
+
+    const decoded = jwt.verify(token, config.JWT_SECRET);
+    socket.userId = decoded.id;
+    socket.username = decoded.username;
+    
+    logger.info(`Socket ${socket.id} authenticated as ${decoded.username}`);
+    next();
+  } catch (err) {
+    logger.error(`Socket ${socket.id} auth failed: ${err.message}`);
+    next(new Error('Authentication error: Invalid token'));
+  }
+});
 
   io.on('connection', (socket) => {
     connectionHandler(io, socket);
