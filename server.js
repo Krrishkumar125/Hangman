@@ -3,8 +3,11 @@ const http = require('http');
 const config = require('./src/config/server.config');
 const logger = require('./src/utils/logger');
 const { connectDB } = require('./src/config/db.config');
+const { initializeSocket } = require('./src/config/socket.config');
 
 const server = http.createServer(app);
+
+const io = initializeSocket(server);
 
 connectDB();
 
