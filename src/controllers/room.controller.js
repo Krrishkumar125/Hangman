@@ -94,8 +94,50 @@ const joinRoom = async (req, res, next) => {
   }
 };
 
+const leaveRoom = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const roomId = roomService.getUserRoom(userId);
+
+    if (!roomId) {
+      return next(new AppError('You are not in any room', 400));
+    }
+
+    roomService.removePlayerFromRoom(roomId, userId);
+    
+    sendSuccess(res, null, 'Left room successfully', 200);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getRoomInfo = async (req, res, next) => {
+  try {
+    const { roomId } = req.params;
+
+    const room = await Room.findOne({ roomId });
+    if (!room) {
+      return next(new AppError('Room not found', 404));
+    }
+
+    const response = {
+      roomId: room.roomId,
+      host: room.hostUsername,
+      maxPlayers: room.maxPlayers,
+      isPasswordProtected: room.isPasswordProtected,
+      status: room.status,
+      players: roomService.getRoomPlayers(roomId) || []
+    };
+
+    sendSuccess(res, response, 'Room info retrieved', 200);
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   createRoom,
   joinRoom,
+  leaveRoom,
+  getRoomInfo,
 };

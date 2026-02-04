@@ -24,6 +24,10 @@ class RoomService {
       throw new Error('Room not found in active rooms');
     }
 
+    if (room.players.length >= room.maxPlayers) {
+       throw new Error('Room is full');
+    }  
+      
     const existingPlayer = room.players.find(p => p.id === userId);
     if (existingPlayer) {
       logger.warn(`Player ${username} attempted duplicate join to room ${roomId}`);
