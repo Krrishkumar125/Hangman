@@ -11,6 +11,7 @@ module.exports = {
   bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS) || 10,
   clientUrl: process.env.CLIENT_URL || "*",
   dictionaryApiUrl: process.env.DICTIONARY_API_URL,
+  randomWordApiUrl: process.env.RANDOM_WORD_API_URL,
   maxPlayersPerRoom: parseInt(process.env.MAX_PLAYERS_PER_ROOM) || 6,
   maxIncorrectGuesses: parseInt(process.env.MAX_INCORRECT_GUESSES) || 6,
 };

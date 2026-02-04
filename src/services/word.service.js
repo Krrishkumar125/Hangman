@@ -1,5 +1,6 @@
 const axios = require("axios");
 const logger = require("../utils/logger");
+const config = require("../config/server.config");
 
 class WordService {
   constructor() {
@@ -27,9 +28,7 @@ class WordService {
 
   async getRandomWord() {
     try {
-      const response = await axios.get(
-        "https://random-word-api.herokuapp.com/word?length=8",
-      );
+      const response = await axios.get(`${config.randomWordApiUrl}?length=8`);
       const word = response.data[0].toUpperCase();
 
       const isValid = await this.validateWord(word);
@@ -44,7 +43,7 @@ class WordService {
 
   async validateWord(word) {
     try {
-      const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`;
+      const url = `${config.dictionaryApiUrl}/${word.toLowerCase()}`;
       const response = await axios.get(url);
       return response.status === 200;
     } catch (error) {
