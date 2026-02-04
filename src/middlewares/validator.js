@@ -1,4 +1,4 @@
-const { body, validationResult } = require("express-validator");
+const { body, param, validationResult } = require("express-validator");
 const { AppError } = require("../utils/responseHandler");
 
 const registerValidation = [
@@ -20,6 +20,28 @@ const loginValidation = [
   body("password").notEmpty().withMessage("Password is required"),
 ];
 
+const roomCreationValidation = [
+  body("maxPlayers")
+    .optional()
+    .isInt({ min: 2, max: 10 })
+    .withMessage("maxPlayers must be between 2 and 10"),
+  body("password")
+    .optional()
+    .isLength({ min: 4, max: 20 })
+    .withMessage("Room password must be 4-20 characters"),
+];
+
+const joinRoomValidation = [
+  param("roomId")
+    .notEmpty()
+    .isLength({ min: 8, max: 8 })
+    .withMessage("Invalid room ID format"),
+  body("password")
+    .optional()
+    .isString()
+    .withMessage("Password must be a string"),
+];
+
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -32,5 +54,7 @@ const validate = (req, res, next) => {
 module.exports = {
   registerValidation,
   loginValidation,
+  roomCreationValidation,
+  joinRoomValidation,
   validate,
 };
