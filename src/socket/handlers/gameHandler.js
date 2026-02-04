@@ -48,26 +48,34 @@ module.exports = (io, socket) => {
     }
   });
 
-  socket.on("game:guess", ({ letter }) => {
+  socket.on("game:guess", async ({ letter }, ack) => {
     try {
       const roomId = roomService.getUserRoom(socket.userId);
-      if (!roomId) {
-        socket.emit("error", { message: "You are not in a room" });
-        return;
+      const result = await gameService.makeGuess(roomId, socket.userId, letter);
+
+      if (result.reason) {
+        io.to(roomId).emit("game:ended", {
+          reason: result.reason,
+          winner: result.winner,
+          word: result.word,
+          scores: result.scores,
+          gameState: result.gameState,
+        });
+        if (ack) ack({ success: true, gameEnded: true });
+      } else {
+        io.to(roomId).emit("game:guess-result", {
+          player: socket.username,
+          letter: result.letter,
+          isCorrect: result.isCorrect,
+          gameState: result.gameState,
+          currentPlayer: result.currentPlayer,
+        });
+        if (ack) ack({ success: true, gameEnded: false });
       }
-
-      const result = gameService.makeGuess(roomId, socket.userId, letter);
-
-      io.to(roomId).emit("game:guess-result", {
-        player: socket.username,
-        letter: result.letter,
-        isCorrect: result.isCorrect,
-        gameState: result.gameState,
-        currentPlayer: result.currentPlayer,
-      });
     } catch (error) {
       logger.error(`Guess error: ${error.message}`);
-      socket.emit("error", { message: error.message });
+      if (ack) ack({ success: false, error: error.message });
+      else socket.emit("error", { message: error.message });
     }
   });
 
