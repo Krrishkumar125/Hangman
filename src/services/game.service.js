@@ -6,6 +6,10 @@ const roomService = require("./room.service");
 const Game = require("../models/Game");
 
 class GameService {
+  constructor() {
+    this.turnLocks = new Map();
+  }
+
   async startGame(roomId) {
     const room = roomService.getRoom(roomId);
     if (!room) throw new Error("Room not found");
@@ -59,61 +63,70 @@ class GameService {
     return this.getGameStateForBroadcast(room.currentGame);
   }
 
-  makeGuess(roomId, userId, letter) {
-    const room = roomService.getRoom(roomId);
-    if (!room || !room.currentGame) throw new Error("No active game");
-
-    const game = room.currentGame;
-
-    if (game.status !== "in-progress") {
-      throw new Error("Game is not in progress");
+  async makeGuess(roomId, userId, letter) {
+    if (this.turnLocks.get(roomId)) {
+      throw new Error("Previous guess still processing");
     }
+    this.turnLocks.set(roomId, true);
 
-    if (game.currentTurnPlayer !== userId) {
-      throw new Error("Not your turn");
+    try {
+      const room = roomService.getRoom(roomId);
+      if (!room || !room.currentGame) throw new Error("No active game");
+
+      const game = room.currentGame;
+
+      if (game.status !== "in-progress") {
+        throw new Error("Game is not in progress");
+      }
+
+      if (game.currentTurnPlayer !== userId) {
+        throw new Error("Not your turn");
+      }
+
+      if (game.wordMaster === userId) {
+        throw new Error("Word master cannot guess");
+      }
+
+      const normalizedLetter = letter.toUpperCase().trim();
+      if (!/^[A-Z]$/.test(normalizedLetter)) {
+        throw new Error("Invalid letter. Must be a single A-Z character.");
+      }
+
+      if (
+        game.guessedLetters.includes(normalizedLetter) ||
+        game.incorrectGuesses.includes(normalizedLetter)
+      ) {
+        throw new Error("Letter already guessed");
+      }
+
+      const isCorrect = game.word.includes(normalizedLetter);
+
+      if (isCorrect) {
+        game.guessedLetters.push(normalizedLetter);
+      } else {
+        game.incorrectGuesses.push(normalizedLetter);
+      }
+
+      const isWordComplete = this.isWordGuessed(game.word, game.guessedLetters);
+      if (isWordComplete) {
+        return this.endGame(roomId, userId, "guessed");
+      }
+
+      if (game.incorrectGuesses.length >= game.maxIncorrectGuesses) {
+        return this.endGame(roomId, null, "failed");
+      }
+      this.advanceTurn(room);
+
+      return {
+        isCorrect,
+        letter: normalizedLetter,
+        gameState: this.getGameStateForBroadcast(game),
+        currentPlayer: room.players.find((p) => p.id === game.currentTurnPlayer)
+          ?.username,
+      };
+    } finally {
+      this.turnLocks.delete(roomId);
     }
-
-    if (game.wordMaster === userId) {
-      throw new Error("Word master cannot guess");
-    }
-
-    const normalizedLetter = letter.toUpperCase().trim();
-    if (!/^[A-Z]$/.test(normalizedLetter)) {
-      throw new Error("Invalid letter. Must be a single A-Z character.");
-    }
-
-    if (
-      game.guessedLetters.includes(normalizedLetter) ||
-      game.incorrectGuesses.includes(normalizedLetter)
-    ) {
-      throw new Error("Letter already guessed");
-    }
-
-    const isCorrect = game.word.includes(normalizedLetter);
-
-    if (isCorrect) {
-      game.guessedLetters.push(normalizedLetter);
-    } else {
-      game.incorrectGuesses.push(normalizedLetter);
-    }
-
-    const isWordComplete = this.isWordGuessed(game.word, game.guessedLetters);
-    if (isWordComplete) {
-      return this.endGame(roomId, userId, "guessed");
-    }
-
-    if (game.incorrectGuesses.length >= game.maxIncorrectGuesses) {
-      return this.endGame(roomId, null, "failed");
-    }
-    this.advanceTurn(room);
-
-    return {
-      isCorrect,
-      letter: normalizedLetter,
-      gameState: this.getGameStateForBroadcast(game),
-      currentPlayer: room.players.find((p) => p.id === game.currentTurnPlayer)
-        ?.username,
-    };
   }
 
   advanceTurn(room) {
