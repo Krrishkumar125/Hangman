@@ -1,7 +1,8 @@
 const winston = require("winston");
+const config = require("../config/server.config");
 
 const logger = winston.createLogger({
-  level: process.env.NODE_ENV === "production" ? "info" : "debug",
+  level: config.nodeEnv === "production" ? "info" : "debug",
   format: winston.format.combine(
     winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
     winston.format.errors({ stack: true }),

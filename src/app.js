@@ -21,6 +21,7 @@ app.get("/health", (req, res) => {
 
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/room", require("./routes/room.routes"));
+app.use("/api/game", require("./routes/game.routes"));
 
 app.use("*path", (req, res) => {
   res.status(404).json({

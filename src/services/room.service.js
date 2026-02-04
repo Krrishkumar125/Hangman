@@ -146,6 +146,15 @@ class RoomService {
       host: room.players.find(p => p.isHost)?.username
     }));
   }
+
+  getRoom(roomId) {
+    return activeRooms.get(roomId);
+  }
+
+  getActiveGame(roomId) {
+    const room = this.getRoom(roomId);
+    return room?.currentGame || null;
+  }
 }
 
 module.exports = new RoomService();
